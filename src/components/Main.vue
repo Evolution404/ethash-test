@@ -93,6 +93,8 @@ export default {
 
       hash:"d4498a5c72396ed9982001ee6c970448dc0e2702bfb23a1c3dad80759302106f",
       nonce:"8c0f737c734f2872",
+
+      ethash: new Ethash(require('level-mem')()),
       fullscreenLoading: false,
     }
   },
@@ -132,7 +134,7 @@ export default {
       })
     },
     calc: function(){
-      let ethash = new Ethash()
+      let ethash = this.ethash
       let headerRlp = rlp.encode(this.headerObj.raw().slice(0, -2))
       let sealHash = ethash.headerHash(this.headerObj.raw()).toString("hex")
       this.sealHash = sealHash
@@ -154,7 +156,7 @@ export default {
         {key:"Nonce",value:headerData.nonce,color:"#f0f9eb"},
         {key:"Seal Hash",value:this.sealHash,color:"#f0f9eb"},
       ]
-      let ethash = new Ethash()
+      let ethash = this.ethash
       let epoc = getEpoc(this.number)
       let cacheSize = getCacheSize(epoc)
       let fullSize = getFullSize(epoc)
@@ -164,26 +166,27 @@ export default {
 
       let seed = getSeed(Buffer.allocUnsafe(32).fill(0),0,epoc)
       this.verifyTable.push({key:"Seed",value:seed.toString("hex"),color:"oldlace"})
-      ethash.mkcache(cacheSize, seed)
-      let rs = ethash.run(hash, nonce, fullSize)
-      this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
-      let powStr = rs.hash.toString("hex")
-      let powZeros = 0
-      for(;powStr[powZeros]=='0';powZeros++);
-      this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
+      ethash.loadEpoc(this.number).then(()=>{
+        let rs = ethash.run(hash, nonce, fullSize)
+        this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
+        let powStr = rs.hash.toString("hex")
+        let powZeros = 0
+        for(;powStr[powZeros]=='0';powZeros++);
+        this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
 
-      let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
-      let targetZeros = 64-difficultyTarget.length
-      for(;difficultyTarget.length<64;){
-        difficultyTarget = "0"+difficultyTarget
-      }
-      this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
-      this.$notify({
-        title: '校验完成',
-        message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
-        type: 'success',
-        duration: 0
-      });
+        let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
+        let targetZeros = 64-difficultyTarget.length
+        for(;difficultyTarget.length<64;){
+          difficultyTarget = "0"+difficultyTarget
+        }
+        this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
+        this.$notify({
+          title: '区块'+number+' 校验完成',
+          message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
+          type: 'success',
+          duration: 0
+        })
+      })
     },
     rowStyle: function({row,rowIndex}){
       if(row.in)
