@@ -4,7 +4,7 @@
       v-loading.fullscreen.lock="fullscreenLoading"
       >
       <el-form-item label="校验的区块号">
-        <el-input v-model="number" placeholder="区块号"></el-input>
+        <el-input-number v-model="number" placeholder="区块号"></el-input-number>
       </el-form-item>
     </el-form>
     <el-button @click="getHeader" type="primary">获取主网数据</el-button>
@@ -76,6 +76,7 @@ import Web3 from 'web3/dist/web3.min.js'
 import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'
 import BigNumber from "bignumber.js"
+import CacheHeader from "../CacheHeader"
 
 export default {
   name: 'Main',
@@ -101,8 +102,9 @@ export default {
   methods:{
     getHeader:function(){
       this.fullscreenLoading = true
-      let web3 = new Web3("wss://mainnet.infura.io/ws/v3/38ea113e7a70462cb577d4822ca4694a");
-      web3.eth.getBlock(this.number).then(headerData=>{
+      let callback = headerData=>{
+        //console.log(JSON.stringify(headerData))
+        CacheHeader[this.number]=headerData
         headerData.difficulty = Number(headerData.difficulty)
         headerData.uncleHash = headerData.sha3Uncles
         headerData.coinbase = headerData.miner
@@ -131,7 +133,13 @@ export default {
         this.headerObj = BlockHeader.fromHeaderData(headerData)
         this.nonce = headerData.nonce.slice(2)
         this.fullscreenLoading = false
-      })
+      }
+      if(CacheHeader[this.number]){
+        callback(CacheHeader[this.number])
+      }else{
+        let web3 = new Web3("wss://mainnet.infura.io/ws/v3/38ea113e7a70462cb577d4822ca4694a");
+        web3.eth.getBlock(this.number).then(callback)
+      }
     },
     calc: function(){
       let ethash = this.ethash
