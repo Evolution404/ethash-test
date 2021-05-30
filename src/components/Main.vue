@@ -106,6 +106,7 @@ export default {
         headerData.coinbase = headerData.miner
         headerData.transactionsTrie = headerData.transactionsRoot
         headerData.receiptTrie = headerData.receiptsRoot
+        headerData.bloom = headerData.logsBloom
         this.header = [
           {key:'Parent Hash',value:headerData.parentHash,in:true},
           {key:'Uncle Hash',value:headerData.uncleHash,in:true},
@@ -166,13 +167,23 @@ export default {
       ethash.mkcache(cacheSize, seed)
       let rs = ethash.run(hash, nonce, fullSize)
       this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
-      this.verifyTable.push({key:"POW",value:rs.hash.toString("hex"),color:"#fef0f0"})
+      let powStr = rs.hash.toString("hex")
+      let powZeros = 0
+      for(;powStr[powZeros]=='0';powZeros++);
+      this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
 
       let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
+      let targetZeros = 64-difficultyTarget.length
       for(;difficultyTarget.length<64;){
         difficultyTarget = "0"+difficultyTarget
       }
       this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
+      this.$notify({
+        title: '校验完成',
+        message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
+        type: 'success',
+        duration: 0
+      });
     },
     rowStyle: function({row,rowIndex}){
       if(row.in)
