@@ -238,6 +238,8 @@ export default {
       }
       if(ethash.epoc!=epoc)
         setTimeout(progressCache,1,cacheSize,seed,0)
+      else
+        verify()
     },
     rowStyle: function({row,rowIndex}){
       if(row.in)
