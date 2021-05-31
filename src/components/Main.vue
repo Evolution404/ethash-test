@@ -174,26 +174,28 @@ export default {
 
       let seed = getSeed(Buffer.allocUnsafe(32).fill(0),0,epoc)
       this.verifyTable.push({key:"Seed",value:seed.toString("hex"),color:"oldlace"})
-      ethash.loadEpoc(this.number).then(()=>{
-        let rs = ethash.run(hash, nonce, fullSize)
-        this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
-        let powStr = rs.hash.toString("hex")
-        let powZeros = 0
-        for(;powStr[powZeros]=='0';powZeros++);
-        this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
+      if(ethash.epoc!=epoc){
+        ethash.mkcache(cacheSize,seed)
+        ethash.epoc=epoc
+      }
+      let rs = ethash.run(hash, nonce, fullSize)
+      this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
+      let powStr = rs.hash.toString("hex")
+      let powZeros = 0
+      for(;powStr[powZeros]=='0';powZeros++);
+      this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
 
-        let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
-        let targetZeros = 64-difficultyTarget.length
-        for(;difficultyTarget.length<64;){
-          difficultyTarget = "0"+difficultyTarget
-        }
-        this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
-        this.$notify({
-          title: '区块'+number+' 校验完成',
-          message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
-          type: 'success',
-          duration: 0
-        })
+      let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
+      let targetZeros = 64-difficultyTarget.length
+      for(;difficultyTarget.length<64;){
+        difficultyTarget = "0"+difficultyTarget
+      }
+      this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
+      this.$notify({
+        title: '区块'+number+' 校验完成',
+        message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
+        type: 'success',
+        duration: 0
       })
     },
     rowStyle: function({row,rowIndex}){
