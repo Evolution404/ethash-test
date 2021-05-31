@@ -45,9 +45,12 @@
         >
       </el-table-column>
     </el-table>
-    <div style="margin-top: 15px">
-      <el-button @click="verify" type="primary">校验</el-button>
-    </div>
+    <el-button style="margin-top:15px" @click="verify" type="primary">校验</el-button>
+    <el-row style="margin-top:15px">
+      <el-col :offset="8" :span="8">
+        <el-progress :text-inside="true" :stroke-width="24" :percentage="percentage" status="success"></el-progress>
+      </el-col>
+    </el-row>
     <el-table
       :data="verifyTable"
       :row-style="rowColor"
@@ -77,6 +80,7 @@ import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'
 import BigNumber from "bignumber.js"
 import CacheHeader from "../CacheHeader"
+import { BN, keccak, keccak256, rlphash, zeros, TWO_POW256 } from 'ethereumjs-util'
 
 export default {
   name: 'Main',
@@ -97,13 +101,13 @@ export default {
 
       ethash: new Ethash(require('level-mem')()),
       fullscreenLoading: false,
+      percentage:0,
     }
   },
   methods:{
     getHeader:function(){
       this.fullscreenLoading = true
       let callback = headerData=>{
-        //console.log(JSON.stringify(headerData))
         CacheHeader[this.number]=headerData
         headerData.difficulty = Number(headerData.difficulty)
         headerData.uncleHash = headerData.sha3Uncles
@@ -152,12 +156,14 @@ export default {
       ]
     },
     verify: function (){
+      const xor = require('buffer-xor')
       let TWO_POW256 = new BigNumber('0x10000000000000000000000000000000000000000000000000000000000000000')
       let number = this.number
       let hash = Buffer.from(this.sealHash, 'hex')
       let nonce = Buffer.from(this.nonce, 'hex')
       let headerData = this.headerData
       let difficulty = Number(headerData.difficulty)
+      let vueobj = this
 
       this.verifyTable = [
         {key:"Block Number",value:headerData.number,color:"#f0f9eb"},
@@ -174,29 +180,64 @@ export default {
 
       let seed = getSeed(Buffer.allocUnsafe(32).fill(0),0,epoc)
       this.verifyTable.push({key:"Seed",value:seed.toString("hex"),color:"oldlace"})
-      if(ethash.epoc!=epoc){
-        ethash.mkcache(cacheSize,seed)
-        ethash.epoc=epoc
-      }
-      let rs = ethash.run(hash, nonce, fullSize)
-      this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
-      let powStr = rs.hash.toString("hex")
-      let powZeros = 0
-      for(;powStr[powZeros]=='0';powZeros++);
-      this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
 
-      let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
-      let targetZeros = 64-difficultyTarget.length
-      for(;difficultyTarget.length<64;){
-        difficultyTarget = "0"+difficultyTarget
+      let CACHE_ROUNDS = 3
+      let HASH_BYTES = 64
+
+      let progressCache=(cacheSize,seed,progress)=>{
+        const n = Math.floor(cacheSize / HASH_BYTES)
+        const total = n-1+n*CACHE_ROUNDS
+        let o
+        if(progress==0)
+          o = [keccak(seed, 512)]
+        else
+          o = ethash.cache
+        let start = Math.floor((total/100)*progress)
+        let end = Math.floor((total/100)*(progress+1))
+        if(progress>=99)
+          end = total
+        for(let i=start;i<end;i++){
+          if(i<n-1)
+            o.push(keccak(o[o.length - 1], 512))
+          else{
+            let a = i - (n-1)
+            a = a % n
+            const v = o[a].readUInt32LE(0) % n
+            o[a] = keccak(xor(o[(a - 1 + n) % n], o[v]), 512)
+          }
+        }
+        ethash.cache = o
+        this.percentage = progress+1
+        if(progress<99)
+          setTimeout(progressCache,1,cacheSize,seed,progress+1)
+        else
+          verify()
       }
-      this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
-      this.$notify({
-        title: '区块'+number+' 校验完成',
-        message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
-        type: 'success',
-        duration: 0
-      })
+
+      let verify = ()=>{
+        ethash.epoc=epoc
+        let rs = ethash.run(hash, nonce, fullSize)
+        this.verifyTable.push({key:"Mix Hash",value:rs.mix.toString("hex"),color:"#fef0f0"})
+        let powStr = rs.hash.toString("hex")
+        let powZeros = 0
+        for(;powStr[powZeros]=='0';powZeros++);
+        this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
+
+        let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
+        let targetZeros = 64-difficultyTarget.length
+        for(;difficultyTarget.length<64;){
+          difficultyTarget = "0"+difficultyTarget
+        }
+        this.verifyTable.push({key:"Difficulty Target",value:difficultyTarget,color:"#fef0f0"})
+        this.$notify({
+          title: '区块'+number+' 校验完成',
+          message: 'pow:'+powZeros+' zeros,target:'+targetZeros+' zeros',
+          type: 'success',
+          duration: 0
+        })
+      }
+      if(ethash.epoc!=epoc)
+        setTimeout(progressCache,1,cacheSize,seed,0)
     },
     rowStyle: function({row,rowIndex}){
       if(row.in)
