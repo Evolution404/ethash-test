@@ -74,7 +74,7 @@
 
 <script>
 import Ethash from '@ethereumjs/ethash'
-import { getEpoc, getCacheSize, getFullSize, getSeed } from '@ethereumjs/ethash/dist/util'
+import { getEpoc, getCacheSize, getFullSize, bufReverse, getSeed } from '@ethereumjs/ethash/dist/util'
 import Web3 from 'web3/dist/web3.min.js'
 import { BlockHeader } from '@ethereumjs/block'
 import * as rlp from 'rlp'
@@ -171,12 +171,16 @@ export default {
         {key:"Seal Hash",value:this.sealHash,color:"#f0f9eb"},
       ]
       let ethash = this.ethash
+      let reverseNonce = bufReverse(nonce).toString("hex")
       let epoc = getEpoc(this.number)
       let cacheSize = getCacheSize(epoc)
       let fullSize = getFullSize(epoc)
+      this.verifyTable.push({key:"Reverse Nonce",value:reverseNonce,color:"oldlace"})
+      this.verifyTable.push({key:"Verify Seed",value:keccak(Buffer.from(this.sealHash+reverseNonce,"hex"),512).toString("hex"),color:"oldlace"})
       this.verifyTable.push({key:"Epoch",value:epoc,color:"oldlace"})
       this.verifyTable.push({key:"Cache Size",value:cacheSize,color:"oldlace"})
       this.verifyTable.push({key:"Full Size",value:fullSize,color:"oldlace"})
+
 
       let seed = getSeed(Buffer.allocUnsafe(32).fill(0),0,epoc)
       this.verifyTable.push({key:"Seed",value:seed.toString("hex"),color:"oldlace"})
