@@ -23,6 +23,12 @@
         label="值"
         align="center"
         >
+        <template slot-scope="scope">
+          <div>
+            <el-tag v-if="scope.row.prefix" size="medium">{{ scope.row.prefix }}</el-tag>
+          </div>
+          {{scope.row.value}}
+        </template>
       </el-table-column>
     </el-table>
     <div style="margin-top: 15px">
@@ -43,6 +49,12 @@
         label="值"
         align="center"
         >
+        <template slot-scope="scope">
+          <div>
+            <el-tag v-if="scope.row.prefix" size="medium">{{ scope.row.prefix }}</el-tag>
+          </div>
+          {{scope.row.value}}
+        </template>
       </el-table-column>
     </el-table>
     <el-button style="margin-top:15px" @click="verify" type="primary">校验</el-button>
@@ -67,6 +79,12 @@
         label="值"
         align="center"
         >
+        <template slot-scope="scope">
+          <div>
+            <el-tag v-if="scope.row.prefix" size="medium">{{ scope.row.prefix }}</el-tag>
+          </div>
+          {{scope.row.value}}
+        </template>
       </el-table-column>
     </el-table>
   </div>
@@ -131,7 +149,7 @@ export default {
           {key:'Extra Data',value:headerData.extraData,in:true},
           {key:'Mix Hash',value:headerData.mixHash},
           {key:'Nonce',value:headerData.nonce},
-          {key:'Hash',value:headerData.hash},
+          {key:'Hash',prefix:"keccak256(FullRLP)",value:headerData.hash},
         ]
         this.headerData = headerData
         this.headerObj = BlockHeader.fromHeaderData(headerData)
@@ -152,7 +170,7 @@ export default {
       this.sealHash = sealHash
       this.rlpAndHash = [
         {key:'RLP',value:headerRlp.toString('hex')},
-        {key:'Seal Hash',value:'0x'+sealHash},
+        {key:'Seal Hash',prefix:"keccak256(RLP)",value:'0x'+sealHash},
       ]
     },
     verify: function (){
@@ -176,7 +194,7 @@ export default {
       let cacheSize = getCacheSize(epoc)
       let fullSize = getFullSize(epoc)
       this.verifyTable.push({key:"Reverse Nonce",value:reverseNonce,color:"oldlace"})
-      this.verifyTable.push({key:"Verify Seed",value:keccak(Buffer.from(this.sealHash+reverseNonce,"hex"),512).toString("hex"),color:"oldlace"})
+      this.verifyTable.push({key:"Verify Seed",prefix:"keccak512(SealHash+ReverseNonce)",value:keccak(Buffer.from(this.sealHash+reverseNonce,"hex"),512).toString("hex"),color:"oldlace"})
       this.verifyTable.push({key:"Epoch",value:epoc,color:"oldlace"})
       this.verifyTable.push({key:"Cache Size",value:cacheSize,color:"oldlace"})
       this.verifyTable.push({key:"Full Size",value:fullSize,color:"oldlace"})
@@ -225,7 +243,7 @@ export default {
         let powStr = rs.hash.toString("hex")
         let powZeros = 0
         for(;powStr[powZeros]=='0';powZeros++);
-        this.verifyTable.push({key:"POW",value:powStr,color:"#fef0f0"})
+        this.verifyTable.push({key:"POW",prefix:"keccak256(VerifySeed+MixHash)",value:powStr,color:"#fef0f0"})
 
         let difficultyTarget = TWO_POW256.div(difficulty).toString(16).split('.')[0]
         let targetZeros = 64-difficultyTarget.length
