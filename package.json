@@ -2,7 +2,7 @@
   "name": "ethash-test",
   "version": "1.0.0",
   "description": "ethash",
-  "author": "Evolution404 <615598813@qq.com>",
+  "author": "Evolution404 <evolution404@qq.com>",
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
