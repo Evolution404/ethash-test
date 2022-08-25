@@ -2,6 +2,12 @@
 
 [演示地址](https://evolution404.github.io/ethash-test/index.html)
 
+![img](https://raw.githubusercontent.com/Evolution404/ethash-test/main/img/1.png)
+
+![img](https://raw.githubusercontent.com/Evolution404/ethash-test/main/img/2.png)
+
+![img](https://raw.githubusercontent.com/Evolution404/ethash-test/main/img/3.png)
+
 ## 本地部署
 
 ``` bash
