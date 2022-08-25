@@ -1,21 +1,18 @@
-# ethash-test
+# Ethash算法在线校验
 
-> ethash
-
-## Build Setup
+## 本地部署
 
 ``` bash
-# install dependencies
+# 安装依赖
 npm install
 
-# serve with hot reload at localhost:8080
+# 建立本地开发环境
 npm run dev
 
-# build for production with minification
+# 构建最终静态文件
 npm run build
-
-# build for production and view the bundle analyzer report
-npm run build --report
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
+## 功能介绍
+1. 根据区块号在线获取区块数据
+2. 计算区块RLP编码，计算区块封装哈希
+3. 生成Ethash校验缓存，校验区块是否满足难度要求
